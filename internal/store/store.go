@@ -4,77 +4,81 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
-	"path/filepath"
+	"sort"
 )
 
-const storeFileName = ".envoy.json"
-
-// EnvSet represents a named set of environment variables.
-type EnvSet struct {
-	Name string            `json:"name"`
-	Vars map[string]string `json:"vars"`
-}
-
-// Store holds all named environment sets for a project.
+// Store holds named environment variable sets and persists them to disk.
 type Store struct {
-	Sets map[string]EnvSet `json:"sets"`
 	path string
+	data map[string]map[string]string
 }
 
-// Load reads the store from the given directory, or returns an empty store.
-func Load(dir string) (*Store, error) {
-	path := filepath.Join(dir, storeFileName)
+// Load reads the store from path, or returns an empty store if the file does
+// not yet exist.
+func Load(path string) (*Store, error) {
 	s := &Store{
-		Sets: make(map[string]EnvSet),
 		path: path,
+		data: make(map[string]map[string]string),
 	}
 
-	data, err := os.ReadFile(path)
-	if errors.Is(err, os.ErrNotExist) {
-		return s, nil
-	}
+	bytes, err := os.ReadFile(path)
 	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return s, nil
+		}
 		return nil, err
 	}
 
-	if err := json.Unmarshal(data, s); err != nil {
+	if err := json.Unmarshal(bytes, &s.data); err != nil {
 		return nil, err
 	}
 	return s, nil
 }
 
-// Save persists the store to disk.
-func (s *Store) Save() error {
-	data, err := json.MarshalIndent(s, "", "  ")
+// save persists the current state to disk.
+func (s *Store) save() error {
+	bytes, err := json.MarshalIndent(s.data, "", "  ")
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(s.path, data, 0600)
+	return os.WriteFile(s.path, bytes, 0o600)
 }
 
-// Add inserts or replaces a named env set.
-func (s *Store) Add(set EnvSet) {
-	s.Sets[set.Name] = set
+// Add inserts a new named profile. It does not check for duplicates.
+func (s *Store) Add(name string, vars map[string]string) error {
+	copy := make(map[string]string, len(vars))
+	for k, v := range vars {
+		copy[k] = v
+	}
+	s.data[name] = copy
+	return s.save()
 }
 
-// Get returns a named env set, or false if not found.
-func (s *Store) Get(name string) (EnvSet, bool) {
-	set, ok := s.Sets[name]
-	return set, ok
+// Get returns the variables for the named profile, or an error if not found.
+func (s *Store) Get(name string) (map[string]string, error) {
+	vars, ok := s.data[name]
+	if !ok {
+		return nil, errors.New("not found")
+	}
+	copy := make(map[string]string, len(vars))
+	for k, v := range vars {
+		copy[k] = v
+	}
+	return copy, nil
 }
 
-// Delete removes a named env set.
-func (s *Store) Delete(name string) bool {
-	_, ok := s.Sets[name]
-	delete(s.Sets, name)
-	return ok
+// Delete removes the named profile from the store.
+func (s *Store) Delete(name string) error {
+	delete(s.data, name)
+	return s.save()
 }
 
-// List returns all env set names.
+// List returns all profile names in sorted order.
 func (s *Store) List() []string {
-	names := make([]string, 0, len(s.Sets))
-	for name := range s.Sets {
+	names := make([]string, 0, len(s.data))
+	for name := range s.data {
 		names = append(names, name)
 	}
+	sort.Strings(names)
 	return names
 }
