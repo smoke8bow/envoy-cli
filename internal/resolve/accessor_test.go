@@ -35,13 +35,14 @@ func TestResolveProfileSuccess(t *testing.T) {
 func TestResolveProfileNotFound(t *testing.T) {
 	fa := &fakeAccessor{profiles: map[string]map[string]string{}}
 	_, err := ResolveProfile(fa, "missing", nil)
-	if	t.Fatal("expected error")
+	if err == nil {
+		t.Fatal("expected error")
 	}
 }
 
 func TestResolveProfileWithAmbient(t *testing.T) {
 	fa := &fakeAccessor{
-		profiles: map{
+		profiles: map[string]map[string]string{
 			"prod": {"URL": "https://$DOMAIN/api"},
 		},
 	}
