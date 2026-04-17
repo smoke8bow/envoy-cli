@@ -55,6 +55,17 @@ func (m *Manager) Clear(profile string) error {
 	return m.save()
 }
 
+// Purge removes all expired entries and persists the result.
+func (m *Manager) Purge() error {
+	now := time.Now()
+	for profile, e := range m.entries {
+		if now.After(e.ExpiresAt) {
+			delete(m.entries, profile)
+		}
+	}
+	return m.save()
+}
+
 func (m *Manager) load() error {
 	data, err := os.ReadFile(m.path)
 	if errors.Is(err, os.ErrNotExist) {
