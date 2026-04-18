@@ -79,6 +79,21 @@ func ExpandMap(vars map[string]string, resolve Resolver) map[string]string {
 	return out
 }
 
+// Variables returns a deduplicated list of variable names referenced in s.
+func Variables(s string) []string {
+	matches := varPattern.FindAllString(s, -1)
+	seen := make(map[string]struct{}, len(matches))
+	var keys []string
+	for _, m := range matches {
+		k := extractKey(m)
+		if _, ok := seen[k]; !ok {
+			seen[k] = struct{}{}
+			keys = append(keys, k)
+		}
+	}
+	return keys
+}
+
 func extractKey(match string) string {
 	if strings.HasPrefix(match, "${") {
 		return match[2 : len(match)-1]
