@@ -38,6 +38,11 @@ func Filter(vars map[string]string, opt Option) Result {
 	return Result{Matched: matched, Excluded: excluded}
 }
 
+// IsEmpty reports whether the Option has no filtering criteria set.
+func (o Option) IsEmpty() bool {
+	return o.Prefix == "" && o.Suffix == "" && o.Contains == "" && len(o.ExactKeys) == 0
+}
+
 func matches(key string, opt Option, exactSet map[string]struct{}) bool {
 	if len(exactSet) > 0 {
 		_, ok := exactSet[key]
