@@ -102,3 +102,24 @@ func TestRestoreSnapshotNotFound(t *testing.T) {
 		t.Fatal("expected error for missing snapshot")
 	}
 }
+
+func TestTakePreservesAllVars(t *testing.T) {
+	fs := newFakeStore()
+	original := map[string]string{"A": "1", "B": "2", "C": "3"}
+	fs.data["staging"] = original
+
+	m := NewManager(fs)
+	entry, err := m.Take("staging", "full copy check")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	for k, v := range original {
+		if entry.Vars[k] != v {
+			t.Errorf("expected Vars[%s]=%s, got %s", k, v, entry.Vars[k])
+		}
+	}
+	if len(entry.Vars) != len(original) {
+		t.Errorf("expected %d vars, got %d", len(original), len(entry.Vars))
+	}
+}
