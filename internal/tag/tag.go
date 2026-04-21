@@ -95,3 +95,25 @@ func (m *Manager) ProfilesWithTag(tag string) ([]string, error) {
 	}
 	return matched, nil
 }
+
+// Rename replaces all occurrences of oldTag with newTag across every profile.
+// Profiles that do not carry oldTag are left unchanged.
+func (m *Manager) Rename(oldTag, newTag string) error {
+	newTag = strings.TrimSpace(newTag)
+	if newTag == "" {
+		return errors.New("new tag must not be empty")
+	}
+	profiles, err := m.ProfilesWithTag(oldTag)
+	if err != nil {
+		return err
+	}
+	for _, p := range profiles {
+		if err := m.Remove(p, oldTag); err != nil {
+			return fmt.Errorf("rename: remove %q from profile %q: %w", oldTag, p, err)
+		}
+		if err := m.Add(p, newTag); err != nil {
+			return fmt.Errorf("rename: add %q to profile %q: %w", newTag, p, err)
+		}
+	}
+	return nil
+}
