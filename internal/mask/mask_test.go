@@ -75,3 +75,16 @@ func TestApplyDoesNotMutateInput(t *testing.T) {
 		t.Error("Apply must not mutate the input map")
 	}
 }
+
+func TestMaskValueEmptyString(t *testing.T) {
+	// Masking an empty sensitive value should still return the mask token,
+	// not an empty string, so callers cannot infer the value is unset.
+	m := NewMasker(nil)
+	if got := m.MaskValue("DB_PASSWORD", ""); got != "***" {
+		t.Errorf("expected *** for empty sensitive value, got %q", got)
+	}
+	// An empty non-sensitive value should pass through unchanged.
+	if got := m.MaskValue("APP_NAME", ""); got != "" {
+		t.Errorf("expected empty string for non-sensitive key, got %q", got)
+	}
+}
