@@ -74,3 +74,13 @@ func TestExtractEmptySource(t *testing.T) {
 		t.Errorf("expected 1 missing key, got %d", len(res.Missing))
 	}
 }
+
+func TestExtractDuplicateKeys(t *testing.T) {
+	res, err := Extract(sampleVars, Options{Keys: []string{"DB_HOST", "DB_HOST"}})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(res.Vars) != 1 {
+		t.Errorf("expected 1 var for duplicate keys, got %d", len(res.Vars))
+	}
+}
