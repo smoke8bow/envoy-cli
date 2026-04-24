@@ -91,3 +91,18 @@ func TestResolveChained(t *testing.T) {
 		t.Errorf("got %q", out["C"])
 	}
 }
+
+// TestResolveAmbientDoesNotOverrideInput verifies that a variable defined in
+// the input map takes precedence over the same key in the ambient environment.
+func TestResolveAmbientDoesNotOverrideInput(t *testing.T) {
+	ambient := map[string]string{"HOME": "/root"}
+	r := NewResolver(ambient)
+	in := map[string]string{"HOME": "/home/user", "CONF": "${HOME}/.config"}
+	out, err := r.Resolve(in)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out["CONF"] != "/home/user/.config" {
+		t.Errorf("got %q, want /home/user/.config", out["CONF"])
+	}
+}
