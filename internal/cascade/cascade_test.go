@@ -37,7 +37,7 @@ func TestResolveSingleProfile(t *testing.T) {
 
 func TestResolveLaterOverrides(t *testing.T) {
 	m := newManager(map[string]map[string]string{
-		"base": {"A": "base", "B": "base"},
+		"base":     {"A": "base", "B": "base"},
 		"override": {"B": "override", "C": "override"},
 	})
 	res, err := m.Resolve([]string{"base", "override"})
@@ -58,8 +58,8 @@ func TestResolveLaterOverrides(t *testing.T) {
 func TestResolveSourceTracking(t *testing.T) {
 	m := newManager(map[string]map[string]string{
 		"base": {"X": "1"},
-		"mid": {"Y": "2"},
-		"top": {"X": "3"},
+		"mid":  {"Y": "2"},
+		"top":  {"X": "3"},
 	})
 	res, err := m.Resolve([]string{"base", "mid", "top"})
 	if err != nil {
@@ -97,5 +97,23 @@ func TestResultKeys(t *testing.T) {
 	keys := res.Keys()
 	if len(keys) != 3 || keys[0] != "A" || keys[1] != "M" || keys[2] != "Z" {
 		t.Errorf("keys not sorted: %v", keys)
+	}
+}
+
+// TestResolveSingleProfileSourceTracking verifies that source tracking is
+// correct when only a single profile is resolved — every key should point
+// back to that profile.
+func TestResolveSingleProfileSourceTracking(t *testing.T) {
+	m := newManager(map[string]map[string]string{
+		"base": {"A": "1", "B": "2"},
+	})
+	res, err := m.Resolve([]string{"base"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	for _, key := range []string{"A", "B"} {
+		if res.Source[key] != "base" {
+			t.Errorf("expected source 'base' for key %q, got %q", key, res.Source[key])
+		}
 	}
 }
